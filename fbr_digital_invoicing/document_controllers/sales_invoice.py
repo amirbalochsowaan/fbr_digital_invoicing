@@ -28,6 +28,10 @@ class SalesInvoice(SalesInvoiceController):
         data = self.get_mapped_data(settings)
         api_log = frappe.new_doc("FDI Request Log")
         api_log.request_data = frappe.as_json(data, indent=4)
+
+        frappe.log_error(title="FBR Request Data", message=str(data))
+
+
         try:
             api = FBRDigitalInvoicingAPI(self.company)
             response = api.make_request("POST", settings.get("invoice_post_method"), data)
@@ -104,6 +108,7 @@ class SalesInvoice(SalesInvoiceController):
         buyerAddress = customer.primary_address if customer.primary_address else ""
         data["buyerAddress"] = self.normalize_address(buyerAddress)
         data["buyerRegistrationType"] = "Unregistered" if not customer.tax_id else "Registered"
+        
         if settings.environment == "Sandbox":
             if not self.custom_sn_id:
                 data["scenarioId"] = "SN002" if not customer.tax_id else "SN001"  # Adjust based on your logic
@@ -111,7 +116,8 @@ class SalesInvoice(SalesInvoiceController):
                 data["scenarioId"] = self.custom_sn_id
 
         data["items"] = self.get_items()
-        
+
+        frappe.log_error(title="FBR Data", message=str(data))        
         return data
     
     def get_items(self):
